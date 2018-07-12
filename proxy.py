@@ -6,6 +6,7 @@ import select
 import socket
 import time
 import threading
+import re
 
 FORMAT = '%(asctime)-15s %(levelname)-10s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -33,12 +34,12 @@ def serverDataLen(s):
 def fragmentation(data):
     tmp = []
     i = 0
-    n = math.ceil(len(data)/1000)
+    n = math.ceil(len(data)/500)
     for i in range (0,n):
-        if i == n -1 :
-            tmp.append(data[i*1000:])
+        if i == n - 1 and n != 1 :
+            tmp.append(data[i*500:])
         else:
-            tmp.append(data[i * 1000:(i + 1) * 1000 - 1])
+            tmp.append(data[i * 500:(i + 1) * 500 - 1])
     f = 0
     seq = 0
     fragments = []
@@ -56,9 +57,13 @@ def fragmentation(data):
             f=1
             seq=i
         alireza = ("f="+str(f)+";seq="+str(seq)+";\r\n").encode()
-        fragment = bytearray(alireza)+bytearray(tmp[i])
+        fragment = alireza+tmp[i].encode()
+
+        print(len(fragment),len(alireza),len(tmp[i].encode()),len(tmp[i]))
+
         fragments.append(fragment)
-    #to code alireza kharabe
+
+    #to code alirea kharabe
     return fragments
 
 
@@ -74,19 +79,11 @@ def retreiveHostname(dataClient):
     server_address = ip_to_tuple(dst)
     return server_address
 
-def check_ack(ack, frag):
-    contolline = frag.splitlines()[0]
-    contolline = contolline.decode()
-    contolbits = contolline.split(";")
-    f = contolbits[0].split("=")[1]
-    seq = contolbits[1].split("=")[1]
+def check_ack(ack):
 
-    acknum = ack.split("=")[1]
+    acknum = ack.decode().split("=")[1]
+    return int(acknum)
 
-    if int(acknum)-1 == int(seq):
-        return True
-    else:
-        return False
 
 def check_isack(data):
     data = data.decode()
@@ -97,6 +94,14 @@ def check_isack(data):
     else:
         return -1
 
+# def htmlMaker(data):
+#     start = data.index("<!DOCTYPE html")
+#     end = data.index("</html>")
+#     file = open("index.html","w")
+#     file.write(data[start:end + len("</html>")])
+
+
+
 def udp_client(client_socket):
     client_address = None
     while True:
@@ -105,22 +110,32 @@ def udp_client(client_socket):
         if (client_address == None or address != client_address):
             client_address = address
         if check_isack(dataClient) >= 0  :
-            counter = counter + 1
-            print(counter)
+            # counter = counter + 1
             if (counter == num_frag):
                 counter = 0
                 continue;
+            # if check_ack(dataClient,frags[counter-1]):
+            #     client_socket.sendto(frags[counter], client_address)
+            #     print("frag sent to client : ", counter)
+            if( check_ack(dataClient) < len(frags) ):
+                counter = check_ack(dataClient)
+                client_socket.sendto(frags[counter], client_address)
+                # print("len frag", counter, "=", len(frags[counter]))
 
-            client_socket.sendto(frags[counter], client_address)
         else:
             dataServer = udp_server( dataInter = dataClient)
+            # if len(dataServer)>2000:
+            #     htmlMaker(dataServer.decode())
+            print("len data server : ",len(dataServer))
             #print("[*] func in <<UDP_CLIENT>> : \n" , dataServer.decode())
             print("[*] fragmantation is starting ...")
-            frags = fragmentation(dataServer)
+            frags = fragmentation(dataServer.decode())
             num_frag = len(frags)
             print("[*] number of frags: " , num_frag)
             counter = 0
             client_socket.sendto(frags[counter], client_address)
+            print("len frag",counter,"=",len(frags[counter]))
+            # print("frag sent to client : ", counter)
 
         #lots of things to do
         #client_socket.sendto(dataServer, client_address)
@@ -158,10 +173,15 @@ def udp_server(dataInter = None):
                 dataFinalarray = bytearray(dataServer)
                 print("*******")
             else :
-                dataFinalarray= dataFinalarray +  bytearray(dataServer)
-                if len(dataFinalarray) >= length:
+                if "</html>" in str(dataServer):
                     server_socket.close()
+                    index = dataServer.decode().index('</html>')
+                    dataServer = (dataServer.decode()[:index + len('</html>')]).encode()
+                    dataFinalarray = dataFinalarray + bytearray(dataServer)
                     return dataFinalarray
+                else:
+                    dataFinalarray = dataFinalarray + bytearray(dataServer)
+
 
 
 def udp_proxy(src):
