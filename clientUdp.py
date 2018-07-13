@@ -10,12 +10,19 @@ MESSAGE = f.read()
 def run_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.sendto(MESSAGE.encode(), (SERVER_HOST, SERVER_PORT))
-
+    client_socket.settimeout(.1)
     seqNum = []
 
     flag = 0 #avalin bar
+    flagAck = 0 #ack req hanooz baram nayoomade
     while True:
-        dataproxy, address = client_socket.recvfrom(BUFFER_SIZE)
+        try:
+            dataproxy, address = client_socket.recvfrom(BUFFER_SIZE)
+        except socket.timeout:
+            if (flagAck == 0 ):
+                client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
+
+
         ###retrieve control bits
         contolline = dataproxy.splitlines()[0]
         contolline = contolline.decode()
@@ -25,7 +32,14 @@ def run_client():
 
         print("frag ",seq," : ",len(dataproxy))
 
-        dataNew = removeControlLine(dataproxy,seq)
+        if (f == '3'):
+            print("haha ack oomad")
+            flagAck = 1
+            continue
+
+
+
+        dataNew = removeControlLine(dataproxy,int(seq))
 
 
         if flag == 0 :
@@ -53,6 +67,7 @@ def run_client():
                 print("ack",ack,"sent")
 
                 client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
+                flagAck = 0
                 print("dobare req dadam")
 
             elif (responseCode == '404'):
@@ -70,7 +85,6 @@ def run_client():
 
         else:
             if flag == 1 : #code 301 ya 302 boode va javabi ke alan oomade aviln baste doroste
-
                 # data = bytearray().join(dataproxy)
                 data = dataNew
                 print("flag = ",flag, "added to data ", seq)
@@ -100,7 +114,7 @@ def run_client():
                     print("***ack", num + 1, "sent")
 
                 if( f == '2' ):
-                    print(datafinal.decode())
+                    htmlMaker(datafinal.decode())
                     seqNum = []
                     break;
 			# tmp = data.decode()
@@ -137,8 +151,10 @@ def removeControlLine(data,seq):
     #     dataNew = dataNew + line + h
     if seq in range(0,10) :
         dataNew = data[12:]
+        print("[***] alireza: " , data[:12].decode())
     else:
         dataNew = data[13:]
+        print("[***] alireza: " , data[:13].decode())
     return dataNew
 
 if __name__ == '__main__':

@@ -39,7 +39,8 @@ def fragmentation(data):
         if i == n - 1 and n != 1 :
             tmp.append(data[i*500:])
         else:
-            tmp.append(data[i * 500:(i + 1) * 500 - 1])
+            tmp.append(data[i * 500:(i + 1) * 500])
+
     f = 0
     seq = 0
     fragments = []
@@ -57,9 +58,9 @@ def fragmentation(data):
             f=1
             seq=i
         alireza = ("f="+str(f)+";seq="+str(seq)+";\r\n").encode()
-        fragment = alireza+tmp[i].encode()
+        fragment = alireza+tmp[i]
 
-        print(len(fragment),len(alireza),len(tmp[i].encode()),len(tmp[i]))
+        #print(len(fragment),len(alireza),len(tmp[i].encode()),len(tmp[i]))
 
         fragments.append(fragment)
 
@@ -104,8 +105,16 @@ def check_isack(data):
 
 def udp_client(client_socket):
     client_address = None
+    flag = 0
     while True:
-        dataClient, address = client_socket.recvfrom(BUFFER_SIZE)
+        try:
+            dataClient, address = client_socket.recvfrom(BUFFER_SIZE)
+        except socket.timeout:
+            if (flag == 1 ):
+                print("time out happend unfortuently negro")
+                client_socket.sendto(frags[counter], client_address)
+            continue
+        flag = 1
         print("came from client : ",dataClient.decode())
         if (client_address == None or address != client_address):
             client_address = address
@@ -119,17 +128,22 @@ def udp_client(client_socket):
             #     print("frag sent to client : ", counter)
             if( check_ack(dataClient) < len(frags) ):
                 counter = check_ack(dataClient)
+                print("len_frag:" , len(frags) , "counter: " , counter)
                 client_socket.sendto(frags[counter], client_address)
                 # print("len frag", counter, "=", len(frags[counter]))
-
+            if ((len(frags)) == check_ack(dataClient) ):
+                print("gav")
+                flag = 0
         else:
+            ackProxy = make_ack()
+            client_socket.sendto(ackProxy, client_address)
             dataServer = udp_server( dataInter = dataClient)
             # if len(dataServer)>2000:
             #     htmlMaker(dataServer.decode())
             print("len data server : ",len(dataServer))
             #print("[*] func in <<UDP_CLIENT>> : \n" , dataServer.decode())
             print("[*] fragmantation is starting ...")
-            frags = fragmentation(dataServer.decode())
+            frags = fragmentation(dataServer)
             num_frag = len(frags)
             print("[*] number of frags: " , num_frag)
             counter = 0
@@ -141,6 +155,8 @@ def udp_client(client_socket):
         #client_socket.sendto(dataServer, client_address)
 
 
+def make_ack():
+    return ("f="+str(3)+";seq="+str(1)+";\r\n").encode()
 
 def udp_server(dataInter = None):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -197,6 +213,7 @@ def udp_proxy(src):
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.bind(ip_to_tuple(src))
+    client_socket.settimeout(.1)
     udp_client(client_socket)
 
 
