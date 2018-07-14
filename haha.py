@@ -409,13 +409,38 @@ Content-Length: 20885
 # print("data proxy",(dataproxy).decode())
 # datatmp = '\n'.join(str(dataproxy.decode()).split('\n')[1:])
 # print("datatmp", datatmp)
-tmp = []
-data = st
-i = 0
-n = math.ceil(len(data)/500)
-for i in range (0,n):
-    if i == n - 1 and n != 1 :
-        tmp.append(data[i*500:-1].encode())
-    else:
-        tmp.append(data[i * 500:(i + 1) * 500 - 1].encode())
-print("*********************************************",(bytearray().join(tmp)).decode())
+# tmp = []
+# data = st
+# i = 0
+# n = math.ceil(len(data)/500)
+# for i in range (0,n):
+#     if i == n - 1 and n != 1 :
+#         tmp.append(data[i*500:-1].encode())
+#     else:
+#         tmp.append(data[i * 500:(i + 1) * 500 - 1].encode())
+# print("*********************************************",(bytearray().join(tmp)).decode())
+# def carry_around_add(a, b):
+#     c = a + b
+#     return (c & 0xffff) + (c >> 16)
+#
+# def checksum(msg):
+#     s = 0
+#     for i in range(0, len(msg)-1, 2):
+#         w = ord(msg[i]) + (ord(msg[i+1]) << 8)
+#         s = carry_around_add(s, w)
+#     return ~s & 0xffff
+#
+# message1 = "salam azizam khoobi kheili khari"
+# # print(checksum(message1))
+#
+# message2 = "aslam azizam khoobi kheili khari"
+# # print(checksum(message2))
+#
+# message3 = "aalam azizam khoobi kheili khari"
+# # print(checksum(message3))
+#
+# frag = b'f=2;seq=42;\r\n\xd9\xbe\xd8\xb3\xd8\xaa\xdb\x8c 1591634311.</p>\r\n  \r\n  </div>\r\n</div>\r\n</body>\r\n</html>'
+# print(checksum(str(frag)))
+import hashlib
+hash_object = hashlib.md5(b'Hello World')
+print(hash_object.hexdigest())

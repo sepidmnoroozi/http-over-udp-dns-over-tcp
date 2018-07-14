@@ -1,5 +1,6 @@
 import socket
 import re
+import hashlib
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
@@ -9,7 +10,8 @@ MESSAGE = f.read()
 
 def run_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    client_socket.sendto(MESSAGE.encode(), (SERVER_HOST, SERVER_PORT))
+    print(len("checksum=" + str(hashlib.md5(MESSAGE.encode()).hexdigest()) + ";\r\n"))
+    client_socket.sendto(("checksum=" + str(hashlib.md5(MESSAGE.encode()).hexdigest()) + ";\r\n"+MESSAGE).encode(), (SERVER_HOST, SERVER_PORT))
     client_socket.settimeout(.1)
     seqNum = []
 
@@ -20,11 +22,16 @@ def run_client():
             dataproxy, address = client_socket.recvfrom(BUFFER_SIZE)
         except socket.timeout:
             if (flagAck == 0 ):
-                client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
+                client_socket.sendto(("checksum=" + str(hashlib.md5(newMessage.encode()).hexdigest()) + ";\r\n"+newMessage).encode(), (SERVER_HOST, SERVER_PORT))
+
+        #retrive checksum
+        checksum_proxy = dataproxy.splitlines()[0].decode().split(";")
+        checksum_proxy_Value = checksum_proxy[0].split("=")[1]
+        print(checksum_proxy_Value)
 
 
         ###retrieve control bits
-        contolline = dataproxy.splitlines()[0]
+        contolline = dataproxy.splitlines()[1]
         contolline = contolline.decode()
         contolbits = contolline.split(";")
         f = contolbits[0].split("=")[1]
@@ -32,14 +39,18 @@ def run_client():
 
         print("frag ",seq," : ",len(dataproxy))
 
+        dataNew = removeControlLines(dataproxy, int(seq))
+
+        dataWOChechsum = removeCkecksum(dataproxy,int(seq))
+
+        clientChecksum = hashlib.md5(dataWOChechsum).hexdigest()
         if (f == '3'):
             print("haha ack oomad")
             flagAck = 1
             continue
 
-
-
-        dataNew = removeControlLine(dataproxy,int(seq))
+        if( clientChecksum != checksum_proxy_Value ):
+            continue
 
 
         if flag == 0 :
@@ -63,10 +74,10 @@ def run_client():
 
                 num = int(seq)
                 ack = "seq=" + str(num + 1)
-                client_socket.sendto(ack.encode(), (SERVER_HOST, SERVER_PORT))
+                client_socket.sendto(("checksum=" + str(hashlib.md5(ack.encode()).hexdigest()) + ";\r\n"+ack).encode(), (SERVER_HOST, SERVER_PORT))
                 print("ack",ack,"sent")
 
-                client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
+                client_socket.sendto(("checksum=" + str(hashlib.md5(newMessage.encode()).hexdigest()) + ";\r\n"+newMessage).encode(), (SERVER_HOST, SERVER_PORT))
                 flagAck = 0
                 print("dobare req dadam")
 
@@ -95,7 +106,7 @@ def run_client():
 
                 num = int(seq)
                 ack = "seq=" + str(num + 1)
-                client_socket.sendto(ack.encode(), (SERVER_HOST, SERVER_PORT))
+                client_socket.sendto(("checksum=" + str(hashlib.md5(ack.encode()).hexdigest()) + ";\r\n"+ack).encode(), (SERVER_HOST, SERVER_PORT))
                 print("*************ack",num+1,"sent")
 
             if flag == 2: #bastehaye badi
@@ -110,11 +121,12 @@ def run_client():
 
                     num = int(seq)
                     ack = "seq=" + str(num + 1)
-                    client_socket.sendto(ack.encode(), (SERVER_HOST, SERVER_PORT))
+                    client_socket.sendto(("checksum=" + str(hashlib.md5(ack.encode()).hexdigest()) + ";\r\n"+ack).encode(), (SERVER_HOST, SERVER_PORT))
                     print("***ack", num + 1, "sent")
 
                 if( f == '2' ):
                     htmlMaker(datafinal.decode())
+                    # print(datafinal.decode())
                     seqNum = []
                     break;
 			# tmp = data.decode()
@@ -142,7 +154,7 @@ def serverDataLen(s):
             #     res = list[1].lstrip()
             #     return res
     return -1
-def removeControlLine(data,seq):
+def removeControlLines(data,seq):
     # lines = data.splitlines()
     # lines = lines[1:]
     # dataNew = bytearray()
@@ -150,12 +162,16 @@ def removeControlLine(data,seq):
     # for line in lines:
     #     dataNew = dataNew + line + h
     if seq in range(0,10) :
-        dataNew = data[12:]
-        print("[***] alireza: " , data[:12].decode())
+        dataNew = data[12+44:]
     else:
-        dataNew = data[13:]
-        print("[***] alireza: " , data[:13].decode())
+        dataNew = data[13+44:]
     return dataNew
+def removeCkecksum(dataproxy,seq):
+    if seq in range(0,10) :
+        dataWOchecksum = dataproxy[44:]
+    else:
+        dataWOchecksum = dataproxy[44:]
+    return dataWOchecksum
 
 if __name__ == '__main__':
 	print ("[*] Running UDP client...")

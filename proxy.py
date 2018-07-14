@@ -7,6 +7,7 @@ import socket
 import time
 import threading
 import re
+import hashlib
 
 FORMAT = '%(asctime)-15s %(levelname)-10s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -38,9 +39,10 @@ def fragmentation(data):
     for i in range (0,n):
         if i == n - 1 and n != 1 :
             tmp.append(data[i*500:])
+            # print("frag ",i," : ",tmp[i])
         else:
             tmp.append(data[i * 500:(i + 1) * 500])
-
+            # print("frag ", i, " : ", tmp[i])
     f = 0
     seq = 0
     fragments = []
@@ -57,10 +59,13 @@ def fragmentation(data):
         else:
             f=1
             seq=i
-        alireza = ("f="+str(f)+";seq="+str(seq)+";\r\n").encode()
-        fragment = alireza+tmp[i]
 
-        #print(len(fragment),len(alireza),len(tmp[i].encode()),len(tmp[i]))
+        alireza = ("f="+str(f)+";seq="+str(seq)+";\r\n").encode()
+        proxychecksum = ("checksum=" + str(hashlib.md5(alireza + tmp[i]).hexdigest()) + ";\r\n").encode()
+        print(len(proxychecksum))
+        fragment = proxychecksum+alireza+tmp[i]
+
+        print(len(fragment),len(proxychecksum),len(alireza),len(tmp[i]))
 
         fragments.append(fragment)
 
@@ -102,13 +107,24 @@ def check_isack(data):
 #     file.write(data[start:end + len("</html>")])
 
 
-
 def udp_client(client_socket):
     client_address = None
     flag = 0
     while True:
         try:
             dataClient, address = client_socket.recvfrom(BUFFER_SIZE)
+            #khate aval ke checjsum hast ro barresi va joda mikonim
+            clientChecksum = dataClient.splitlines()[0].decode().split(";")
+            clientChecksum_value = clientChecksum[0].split("=")[1]
+            print(dataClient)
+            dataClient = dataClient[44:]
+            print(dataClient)
+            proxyChecksum =  hashlib.md5(dataClient).hexdigest()
+
+            if(clientChecksum_value != proxyChecksum ):
+                print("ride")
+                continue
+
         except socket.timeout:
             if (flag == 1 ):
                 print("time out happend unfortuently negro")
@@ -156,7 +172,9 @@ def udp_client(client_socket):
 
 
 def make_ack():
-    return ("f="+str(3)+";seq="+str(1)+";\r\n").encode()
+    alireza = ("f="+str(3)+";seq="+str(1)+";\r\n").encode()
+    proxychecksum = ("checksum=" + str(hashlib.md5(alireza).hexdigest()) + ";\r\n").encode()
+    return proxychecksum+alireza
 
 def udp_server(dataInter = None):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
