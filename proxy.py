@@ -187,7 +187,7 @@ def udp_server(dataInter = None):
     while True:
         server_socket.send(dataInter)
         dataServer = server_socket.recv(BUFFER_SIZE)
-        #print("[**]" , dataServer.decode())
+        print("[**]" , dataServer)
         if flag == 0 :
             CL = serverDataLen(dataServer.decode())
             #print("[*] content length: " , CL)
@@ -201,7 +201,7 @@ def udp_server(dataInter = None):
             server_socket.close()
             return dataServer
         else:
-            if CL > 1000:
+            if '200 OK'.encode() in dataServer:
                 flag = 1
                 length =  CL
                 dataFinalarray = bytearray(dataServer)
@@ -216,6 +216,16 @@ def udp_server(dataInter = None):
                 else:
                     dataFinalarray = dataFinalarray + bytearray(dataServer)
 
+        # if "DOCTYPE" in str(dataServer):
+        #     dataFinalarray = bytearray(dataServer)
+        # elif "</html>" in str(dataServer):
+        #     server_socket.close()
+        #     index = dataServer.decode().index('</html>')
+        #     dataServer = (dataServer.decode()[:index + len('</html>')]).encode()
+        #     dataFinalarray = dataFinalarray + bytearray(dataServer)
+        #     return dataFinalarray
+        # else:
+        #     dataFinalarray = dataFinalarray + bytearray(dataServer)
 
 
 def udp_proxy(src):

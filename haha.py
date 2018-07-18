@@ -29,6 +29,7 @@
 # # # print(data.decode())
 # import re
 import math
+from operator import index
 
 st = """HTTP/1.1 200 OK
 Cache-Control: private
@@ -441,6 +442,16 @@ Content-Length: 20885
 #
 # frag = b'f=2;seq=42;\r\n\xd9\xbe\xd8\xb3\xd8\xaa\xdb\x8c 1591634311.</p>\r\n  \r\n  </div>\r\n</div>\r\n</body>\r\n</html>'
 # print(checksum(str(frag)))
-import hashlib
-hash_object = hashlib.md5(b'Hello World')
-print(hash_object.hexdigest())
+# import hashlib
+# hash_object = hashlib.md5(b'Hello World')
+# print(hash_object.hexdigest())
+s = """salam 
+mahyar
+khoobi?
+<man kheili khastam
+<halam az
+shabake
+<beham mikhore>
+khak bar sare hamashoon"""
+start = s.index("<")
+print(s[start:-1])

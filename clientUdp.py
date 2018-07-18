@@ -61,7 +61,7 @@ def run_client():
 
 
             if responseCode == '302' or responseCode == "301":
-                newURL = dataFirst.decode().splitlines()[2].split("ir")[1]
+                newURL = dataFirst.decode().splitlines()[2].split(".com")[1]
                 flag = 1
                 print("rafte jaye dg tem ya per")
                 # change url
@@ -85,14 +85,20 @@ def run_client():
                 flag = 1
                 print("khob ride")
                 break
-            # elif responseCode == '200':
-            #     CL = serverDataLen(data.decode())
-            #     flag = 2
-            #     datafinal = data
-            #     num = int(seq)
-            #     ack = "seq=" + str(num + 1)
-            #     client_socket.sendto(ack.encode(), (SERVER_HOST, SERVER_PORT))
-            #     print("ack",ack,"sent")
+            elif responseCode == '200':
+                data = dataNew
+                print("flag = ", flag, "added to data ", seq)
+
+                flag = 2
+                datafinal = data
+                seqNum.append(seq)
+
+                num = int(seq)
+                ack = "seq=" + str(num + 1)
+                client_socket.sendto(
+                    ("checksum=" + str(hashlib.md5(ack.encode()).hexdigest()) + ";\r\n" + ack).encode(),
+                    (SERVER_HOST, SERVER_PORT))
+                print("*************ack", num + 1, "sent")
 
         else:
             if flag == 1 : #code 301 ya 302 boode va javabi ke alan oomade aviln baste doroste
@@ -137,7 +143,7 @@ def run_client():
 			# newMessage = "ack="+seq+1
 			# client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
 def htmlMaker(data):
-    start = data.index("<!DOCTYPE html")
+    start = data.index("<")
     end = data.index("</html>")
     file = open("index.html","w")
     file.write(data[start:end + len("</html>")])
