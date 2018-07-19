@@ -39,10 +39,10 @@ def fragmentation(data):
     for i in range (0,n):
         if i == n - 1 and n != 1 :
             tmp.append(data[i*500:])
-            # print("frag ",i," : ",tmp[i])
+
         else:
             tmp.append(data[i * 500:(i + 1) * 500])
-            # print("frag ", i, " : ", tmp[i])
+
     f = 0
     seq = 0
     fragments = []
@@ -69,7 +69,10 @@ def fragmentation(data):
 
         fragments.append(fragment)
 
-    #to code alirea kharabe
+    # data = bytearray().join(tmp)
+    # data = data.split("\r\n\r\n".encode())[1]
+    # file = open("index.jpg", "wb")
+    # file.write(data)
     return fragments
 
 
@@ -100,11 +103,6 @@ def check_isack(data):
     else:
         return -1
 
-# def htmlMaker(data):
-#     start = data.index("<!DOCTYPE html")
-#     end = data.index("</html>")
-#     file = open("index.html","w")
-#     file.write(data[start:end + len("</html>")])
 
 
 def udp_client(client_socket):
@@ -116,9 +114,9 @@ def udp_client(client_socket):
             #khate aval ke checjsum hast ro barresi va joda mikonim
             clientChecksum = dataClient.splitlines()[0].decode().split(";")
             clientChecksum_value = clientChecksum[0].split("=")[1]
-            print(dataClient)
+
             dataClient = dataClient[44:]
-            print(dataClient)
+
             proxyChecksum =  hashlib.md5(dataClient).hexdigest()
 
             if(clientChecksum_value != proxyChecksum ):
@@ -135,37 +133,29 @@ def udp_client(client_socket):
         if (client_address == None or address != client_address):
             client_address = address
         if check_isack(dataClient) >= 0  :
-            # counter = counter + 1
-            if (counter == num_frag):
-                counter = 0
-                continue;
-            # if check_ack(dataClient,frags[counter-1]):
-            #     client_socket.sendto(frags[counter], client_address)
-            #     print("frag sent to client : ", counter)
+
             if( check_ack(dataClient) < len(frags) ):
                 counter = check_ack(dataClient)
-                print("len_frag:" , len(frags) , "counter: " , counter)
                 client_socket.sendto(frags[counter], client_address)
-                # print("len frag", counter, "=", len(frags[counter]))
+                print("frag sent to client : ", counter)
+
             if ((len(frags)) == check_ack(dataClient) ):
                 print("gav")
+                counter = 0
                 flag = 0
         else:
             ackProxy = make_ack()
             client_socket.sendto(ackProxy, client_address)
             dataServer = udp_server( dataInter = dataClient)
-            # if len(dataServer)>2000:
-            #     htmlMaker(dataServer.decode())
-            print("len data server : ",len(dataServer))
-            #print("[*] func in <<UDP_CLIENT>> : \n" , dataServer.decode())
+
             print("[*] fragmantation is starting ...")
             frags = fragmentation(dataServer)
             num_frag = len(frags)
             print("[*] number of frags: " , num_frag)
             counter = 0
             client_socket.sendto(frags[counter], client_address)
-            print("len frag",counter,"=",len(frags[counter]))
-            # print("frag sent to client : ", counter)
+
+            print("frag sent to client : ", counter)
 
         #lots of things to do
         #client_socket.sendto(dataServer, client_address)
@@ -180,52 +170,49 @@ def udp_server(dataInter = None):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = retreiveHostname(dataInter)
     server_socket.connect(server_address)
-    #print("[*] data sent from <<UDP_server>>:" , dataInter.decode() )
+    server_socket.settimeout(100)
+
     server_socket.send(dataInter)
-    length = 0
-    flag = 0
+
+    dataFinalarray = b''
     while True:
-        server_socket.send(dataInter)
-        dataServer = server_socket.recv(BUFFER_SIZE)
-        print("[**]" , dataServer)
-        if flag == 0 :
-            CL = serverDataLen(dataServer.decode())
-            #print("[*] content length: " , CL)
-            flag = 1
-        else:
-            CL = -1
-        print("[*] CL is :" , CL)
+        try:
+            dataServer = server_socket.recv(BUFFER_SIZE)
+            if not dataServer:
+                server_socket.close()
+                return dataFinalarray
 
 
-        if  ( CL <= 1000 and CL >= 0 ) :
+            if  '301 Moved Permanently'.encode() in dataServer or '302 Found'.encode() in dataServer or '404 Not Found'.encode() in dataServer :
+                print(dataServer.decode())
+                server_socket.close()
+                return dataServer
+            else:
+
+                if '200 OK'.encode() in dataServer:
+
+                    dataFinalarray = bytearray(dataServer)
+                    print("*******")
+                else :
+                    # if "</html>" in str(dataServer):
+                    #     print(dataServer)
+                    #     server_socket.close()
+                    #     index = dataServer.decode("utf-8","ignore").index('</html>')
+                    #     dataServer = (dataServer.decode("utf-8","ignore")[:index + len('</html>')]).encode()
+                    #     dataFinalarray = dataFinalarray + bytearray(dataServer)
+                    #     return dataFinalarray
+                    # if not dataServer:
+                    #     return dataFinalarray
+                    # else:
+                    dataFinalarray = dataFinalarray + bytearray(dataServer)
+            # if len(dataServer) < BUFFER_SIZE:
+            #     server_socket.close()
+            #     return dataFinalarray
+        except socket.timeout:
             server_socket.close()
-            return dataServer
-        else:
-            if '200 OK'.encode() in dataServer:
-                flag = 1
-                length =  CL
-                dataFinalarray = bytearray(dataServer)
-                print("*******")
-            else :
-                if "</html>" in str(dataServer):
-                    server_socket.close()
-                    index = dataServer.decode().index('</html>')
-                    dataServer = (dataServer.decode()[:index + len('</html>')]).encode()
-                    dataFinalarray = dataFinalarray + bytearray(dataServer)
-                    return dataFinalarray
-                else:
-                    dataFinalarray = dataFinalarray + bytearray(dataServer)
+            return dataFinalarray
 
-        # if "DOCTYPE" in str(dataServer):
-        #     dataFinalarray = bytearray(dataServer)
-        # elif "</html>" in str(dataServer):
-        #     server_socket.close()
-        #     index = dataServer.decode().index('</html>')
-        #     dataServer = (dataServer.decode()[:index + len('</html>')]).encode()
-        #     dataFinalarray = dataFinalarray + bytearray(dataServer)
-        #     return dataFinalarray
-        # else:
-        #     dataFinalarray = dataFinalarray + bytearray(dataServer)
+
 
 
 def udp_proxy(src):
