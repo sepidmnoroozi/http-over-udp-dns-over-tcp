@@ -84,11 +84,10 @@ def run_client():
             dataFirst = dataNew
             print("len data first : ",len(dataFirst))
 
-            print("datafirst",dataFirst.decode())
+
 
             datafirstline = dataFirst.decode().splitlines()[0]
 
-            print("datafirstline",datafirstline)
 
             if ("302" in datafirstline) or ("301" in datafirstline) :
                 responseCode = '302 or 301'
@@ -141,17 +140,14 @@ def run_client():
                     seqNum = []
                     continue;
 
-            elif "301".encode() in firstLine:
-                responseCode = '301'
-
-            elif "404".encode() in firstLine:
+            elif "404" in datafirstline:
                 responseCode = '404'
                 flag = 1
                 print("khob ride 404 ")
                 seqNum = []
                 break
 
-            elif "200".encode() in firstLine:
+            elif "200" in datafirstline:
                 responseCode = '200'
                 data = dataNew
                 print("flag = ", flag, "added to data ", seq)
@@ -228,7 +224,7 @@ def run_client():
 
                 if( f == '2' or f == '0' ):
                     # print(datafinal)
-                    # htmlMaker(datafinal)
+                    htmlMaker(datafinal)
                     seqNum = []
                     break;
 			# tmp = data.decode()
@@ -239,14 +235,21 @@ def run_client():
 			# newMessage = "ack="+seq+1
 			# client_socket.sendto(newMessage.encode(), (SERVER_HOST, SERVER_PORT))
 def htmlMaker(data):
-
+    # ax ya film
     # data = data.split("\r\n\r\n".encode())[1]
-    # file = open("index.png","wb")
+    # file = open("haha.png","wb")
     # file.write(data)
 
+    #html
     data = data.split("\r\n\r\n".encode())[1]
     file = open("index.html","w")
     file.write(data.decode("utf-8","ignore"))
+
+    #aut
+    # data = data.split("\r\n\r\n\r\n\r\n".encode())[1]
+    # file = open("index.html", "w")
+    # file.write(data.decode("utf-8", "ignore"))
+
 
 # def serverDataLen(s):
 #     lines = s.splitlines()

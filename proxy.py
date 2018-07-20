@@ -62,10 +62,10 @@ def fragmentation(data):
 
         alireza = ("f="+str(f)+";seq="+str(seq)+";\r\n").encode()
         proxychecksum = ("checksum=" + str(hashlib.md5(alireza + tmp[i]).hexdigest()) + ";\r\n").encode()
-        print(len(proxychecksum))
+        # print(len(proxychecksum))
         fragment = proxychecksum+alireza+tmp[i]
 
-        print(len(fragment),len(proxychecksum),len(alireza),len(tmp[i]))
+        # print(len(fragment),len(proxychecksum),len(alireza),len(tmp[i]))
 
         fragments.append(fragment)
 
@@ -103,6 +103,32 @@ def check_isack(data):
     else:
         return -1
 
+def udpCache(dataInter , dataServer):
+    #har do vorodi bytearray hastan
+
+    fileName = hashlib.md5(dataInter.strip()).hexdigest()
+
+    file = open("records","a+")
+    file.write(fileName+"\n")
+
+    record = open(fileName,"wb")
+    record.write(dataServer)
+
+def searchCache(dataClient):
+
+    file = open("records", "r")
+    records = file.readlines()
+
+    print("req client : ",hashlib.md5(dataClient.strip()).hexdigest(),type(hashlib.md5(dataClient.strip()).hexdigest()),len(hashlib.md5(dataClient.strip()).hexdigest()))
+
+    for line in records:
+        print("line is : ",line,type(line.strip()),len(line.strip()))
+        if hashlib.md5(dataClient.strip()).hexdigest() == line.strip():
+            record = open(line.strip() , "rb")
+            print("*************haha chace works :))))))")
+            return record.read()
+
+    return udp_server( dataInter = dataClient)
 
 
 def udp_client(client_socket):
@@ -146,7 +172,9 @@ def udp_client(client_socket):
         else:
             ackProxy = make_ack()
             client_socket.sendto(ackProxy, client_address)
-            dataServer = udp_server( dataInter = dataClient)
+
+
+            dataServer = searchCache(dataClient)
 
             print("[*] fragmantation is starting ...")
             frags = fragmentation(dataServer)
@@ -178,13 +206,18 @@ def udp_server(dataInter = None):
     while True:
         try:
             dataServer = server_socket.recv(BUFFER_SIZE)
-            if not dataServer:
+
+
+            if not dataServer :
+
+                udpCache(dataInter,dataFinalarray)
+
                 server_socket.close()
                 return dataFinalarray
 
 
             if  '301 Moved Permanently'.encode() in dataServer or '302 Found'.encode() in dataServer or '404 Not Found'.encode() in dataServer :
-                print(dataServer.decode())
+                udpCache(dataInter, dataServer)
                 server_socket.close()
                 return dataServer
             else:
@@ -209,8 +242,10 @@ def udp_server(dataInter = None):
             #     server_socket.close()
             #     return dataFinalarray
         except socket.timeout:
-            server_socket.close()
-            return dataFinalarray
+            server_socket.send(dataInter)
+            # server_socket.close()
+            # return dataFinalarray
+
 
 
 
@@ -228,7 +263,7 @@ def udp_proxy(src):
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.bind(ip_to_tuple(src))
-    client_socket.settimeout(.1)
+    client_socket.settimeout(1)
     udp_client(client_socket)
 
 

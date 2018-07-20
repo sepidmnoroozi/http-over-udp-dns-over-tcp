@@ -1,0 +1,11 @@
+HTTP/1.1 301 Moved Permanently
+Date: Fri, 20 Jul 2018 10:01:34 GMT
+Server: Apache/2
+X-Powered-By: PHP/5.6.33
+Set-Cookie: _yon=94467fddb45314743d29e1a202ea1078; expires=Wed, 16-Jan-2019 10:01:34 GMT; Max-Age=15552000; path=/; domain=.yon.ir
+Location: http://up2www.com/uploads/066ebtc.jpg
+Vary: User-Agent
+Content-Length: 0
+Content-Type: text/html; charset=UTF-8
+Connection: close
+

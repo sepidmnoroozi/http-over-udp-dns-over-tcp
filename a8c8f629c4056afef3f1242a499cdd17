@@ -1,0 +1,16 @@
+HTTP/1.1 301 Moved Permanently
+Date: Fri, 20 Jul 2018 10:11:31 GMT
+Server: Apache
+Location: http://www.stealmylogin.com/
+Vary: Accept-Encoding
+Content-Length: 236
+Content-Type: text/html; charset=iso-8859-1
+Connection: close
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>301 Moved Permanently</title>
+</head><body>
+<h1>Moved Permanently</h1>
+<p>The document has moved <a href="http://www.stealmylogin.com/">here</a>.</p>
+</body></html>

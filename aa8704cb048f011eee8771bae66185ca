@@ -1,0 +1,9 @@
+HTTP/1.1 302 Moved Temporarily
+Content-Type: text/html; charset=UTF-8
+Location: http://www.aut.ac.ir/aut/fa/
+Vary: Accept-Encoding
+Server: AUT
+Date: Fri, 20 Jul 2018 10:04:01 GMT
+Connection: close
+Content-Length: 0
+
